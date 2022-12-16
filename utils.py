@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import cm
+import heston
 
 def plot_vol_smile(strikes: [float], ivs: [float]):
     fig, ax = plt.subplots()
@@ -11,7 +12,7 @@ def plot_vol_smile(strikes: [float], ivs: [float]):
     return fig
 
 
-def plot_vol_surface(strikes: [float], expiry: [float], ivs: [float]):
+def plot_vol_surface(strikes: [float], expiry: [float], ivs: [[float]]):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     X, Y = np.meshgrid(strikes, expiry)
@@ -19,4 +20,5 @@ def plot_vol_surface(strikes: [float], expiry: [float], ivs: [float]):
     surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cm.coolwarm,
                         linewidth=0.1)
     fig.colorbar(surf, shrink=0.5, aspect=5)
+    fig.tight_layout()
     return fig

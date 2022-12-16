@@ -2,6 +2,9 @@ import unittest
 import heston
 import utils
 import QuantLib as ql
+import pandas as pd
+import numpy as np
+from termcolor import colored
 
 # some test data.
 day_count = heston.get_day_count()
@@ -67,8 +70,45 @@ class TestHeston(unittest.TestCase):
     def test_heston(self):
         black = heston.black_surface(calculation_date, expiration_dates, strikes, iv)
         assert black.blackVol(1.2, 600) >= 0.3
+        hes = heston.heston_surface(calculation_date, spot, expiration_dates, strikes, iv)
+        assert hes.blackVol(1.2, 600) >= 0.3
+
+        test_res = {}
+        expiry = [day_count.yearFraction(calculation_date, d) for d in expiration_dates]
+        test_res['actual'] = pd.DataFrame(iv, index=expiry, columns=strikes)
+
+        extrapolate_expiry = np.linspace(0.1, max(expiry), 100)
+
+        black_iv = [[black.blackVol(ex, s) for s in strikes]
+                    for ex in extrapolate_expiry]
+        test_res['black'] = pd.DataFrame(
+            black_iv, index=extrapolate_expiry, columns=strikes)
+
+        print(colored('Black Model Fitted IV', 'green'))
+        print(test_res['black'].to_markdown())
+
+        heston_iv = [[hes.blackVol(ex, s) for s in strikes]
+                     for ex in extrapolate_expiry]
+        test_res['heston'] = pd.DataFrame(
+            heston_iv, index=extrapolate_expiry, columns=strikes)
+
+        print(colored('Heston Model Fitted IV', 'green'))
+        print(test_res['heston'].to_markdown())
+
+        with pd.ExcelWriter('test.xlsx') as w:
+            for model_name, value in test_res.items():
+                value.to_excel(w, model_name)
+        
+        surf = utils.plot_vol_surface(strikes, extrapolate_expiry, black_iv)
+        surf.savefig('test_vol_surface_black.png')
+
+        surf = utils.plot_vol_surface(strikes, extrapolate_expiry, heston_iv)
+        surf.savefig('test_vol_surface_heston.png')
 
     def test_utils(self):
         fig = utils.plot_vol_smile(strikes, iv[0])
+        fig.savefig('test_vol_smile.png')
         expiry = [day_count.yearFraction(calculation_date, d) for d in expiration_dates]
         surf = utils.plot_vol_surface(strikes, expiry, iv)
+        surf.savefig('test_vol_surface_raw.png')
+        
